@@ -60,9 +60,9 @@ namespace ConvertMultipleDocxToPDF
                     // Save the document as PDF
                     document.SaveAs2(pdfFilePath, Word.WdSaveFormat.wdFormatPDF);
 
-                    // Close the document
-                    document.Close();
-                    
+                    // Close the document without saving changes
+                    document.Close(SaveChanges: false);
+
                 }
             }
             catch (Exception ex)
