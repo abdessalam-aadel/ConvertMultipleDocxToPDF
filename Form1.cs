@@ -15,9 +15,9 @@ namespace ConvertMultipleDocxToPDF
 
         // Store slected path of Folder browser dialog in variable
         string selected_path;
+
         // Create fileCount to counting number of DOCX files found
         int fileCount = 0;
-
 
         public Form1() => InitializeComponent();
 
@@ -41,20 +41,27 @@ namespace ConvertMultipleDocxToPDF
             labelInfo.Text = "Processing ...";
             labelErrorMessage.Text = "";
 
+            // Create a new instance of Microsoft Word through the Interop library
             Word.Application wordApp = new Word.Application();
 
-            try
+            // Log file
+            string logFilePath = selected_path + @"\exceptions.log";
+            // Delete the log file if it exists
+            if (File.Exists(logFilePath))
             {
-                foreach (string files in DOCXfiles)
-                {
-                    // Open the document
-                    //Word.Document document = wordApp.Documents.Open(files);
-                    // Open the document as read-only
-                    Word.Document document = wordApp.Documents.Open(files, ReadOnly: true);
+                File.Delete(logFilePath);
+            }
 
-                    string targetFolder = Path.GetDirectoryName(files);
+            foreach (string file in DOCXfiles)
+            {
+                try
+                {
+                    // Open the document as read-only
+                    Word.Document document = wordApp.Documents.Open(file, ReadOnly: true);
+                    // Get Directory name
+                    string targetFolder = Path.GetDirectoryName(file);
                     // Define the output PDF path
-                    string pdfFileName = Path.GetFileNameWithoutExtension(files) + ".pdf";
+                    string pdfFileName = Path.GetFileNameWithoutExtension(file) + ".pdf";
                     string pdfFilePath = Path.Combine(targetFolder, pdfFileName);
 
                     // Save the document as PDF
@@ -62,30 +69,35 @@ namespace ConvertMultipleDocxToPDF
 
                     // Close the document without saving changes
                     document.Close(SaveChanges: false);
-
+                }
+                catch (Exception ex)
+                {
+                    // Write Exception into exceptions.log
+                    LogException(logFilePath,file, ex);
+                    // Continue to the next iteration
+                    continue;
                 }
             }
-            catch (Exception ex)
-            {
-                Cursor = Cursors.Default;
-                MessageBox.Show(ex.Message);
-                TxtBoxLoad.Text = "Chose your folder location ...";
-                labelInfo.Text = "...";
-                // Clear string array
-                DOCXfiles = null;
-                return;
-            }
-            finally
-            {
-                // Quit the Word application
-                wordApp.Quit();
-                Marshal.ReleaseComObject(wordApp);
-            }
+
+            // Quit the Word application
+            wordApp.Quit();
+            Marshal.ReleaseComObject(wordApp);
+
             // Clear string array
             DOCXfiles = null;
             Cursor = Cursors.Default;
             TxtBoxLoad.Text = "Chose your folder location ...";
             labelInfo.Text = "Done.";
+        }
+
+        // Methode Write exceptions into log file
+        static void LogException(string logFilePath,string filePath, Exception ex)
+        {
+            using (StreamWriter writer = new StreamWriter(logFilePath, true))
+            {
+                string filename = Path.GetFileNameWithoutExtension(filePath);
+                writer.WriteLine($"{filename} : {ex.Message}");
+            }
         }
 
         // Handle Event Click of Buttton Load Folder
